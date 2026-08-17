@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIP Growth Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --ink:#0e2a24;
+    --paper:#f2f5f1;
+    --panel:#ffffff;
+    --moss:#1f5c4a;
+    --gold:#c99a3f;
+    --line:#d8ddd4;
+    --muted:#5c6b62;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:0 0 80px;
+  }
+  header{
+    padding:56px 24px 40px;
+    max-width:960px;
+    margin:0 auto;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--moss);
+    margin-bottom:14px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(32px,5vw,52px);
+    line-height:1.05;
+    margin:0 0 12px;
+  }
+  header p{
+    color:var(--muted);
+    font-size:16px;
+    max-width:520px;
+    margin:0;
+  }
+  main{
+    max-width:960px;
+    margin:0 auto;
+    padding:40px 24px 0;
+  }
+  .layout{
+    display:grid;
+    grid-template-columns:300px 1fr;
+    gap:32px;
+  }
+  @media (max-width:760px){
+    .layout{grid-template-columns:1fr; row-gap:24px;}
+    .inputs{position:static; top:auto;}
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:2px;
+  }
+  .inputs{
+    padding:28px 24px;
+    height:fit-content;
+  }
+  .field{margin-bottom:22px;}
+  .field label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .field input{
+    width:100%;
+    border:none;
+    border-bottom:1.5px solid var(--line);
+    background:transparent;
+    font-family:'Fraunces',serif;
+    font-size:26px;
+    font-weight:500;
+    color:var(--ink);
+    padding:4px 0 8px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  .field input:focus{border-bottom-color:var(--moss);}
+  .field .suffix{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    margin-top:4px;
+  }
+  .summary{
+    padding:28px 24px;
+    margin-bottom:24px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+  }
+  .summary .stat{
+    padding:0 16px;
+    border-left:1px solid var(--line);
+  }
+  .summary .stat:first-child{border-left:none;padding-left:0;}
+  .summary .stat .label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .summary .stat .value{
+    font-family:'Fraunces',serif;
+    font-size:clamp(20px,2.6vw,30px);
+    font-weight:600;
+  }
+  .summary .stat.gold .value{color:var(--gold);}
+  .summary .stat.moss .value{color:var(--moss);}
+  @media (max-width:520px){
+    .summary{grid-template-columns:1fr; row-gap:20px;}
+    .summary .stat{border-left:none; padding-left:0; padding-top:16px; border-top:1px solid var(--line);}
+    .summary .stat:first-child{border-top:none; padding-top:0;}
+  }
+  .bar-wrap{
+    padding:0 24px 28px;
+  }
+  .bar{
+    height:10px;
+    width:100%;
+    background:var(--line);
+    border-radius:6px;
+    overflow:hidden;
+    display:flex;
+  }
+  .bar .seg-invest{background:var(--moss);}
+  .bar .seg-return{background:var(--gold);}
+  .bar-legend{
+    display:flex;
+    gap:24px;
+    margin-top:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .bar-legend span::before{
+    content:"";
+    display:inline-block;
+    width:8px;height:8px;
+    border-radius:50%;
+    margin-right:6px;
+  }
+  .bar-legend .li-invest::before{background:var(--moss);}
+  .bar-legend .li-return::before{background:var(--gold);}
+
+  .table-panel{padding:0;}
+  .table-scroll{max-height:520px; overflow-y:auto;}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+  }
+  thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:var(--panel);
+    text-align:right;
+    padding:14px 16px;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    border-bottom:1px solid var(--line);
+  }
+  thead th:first-child{text-align:left;}
+  tbody td{
+    text-align:right;
+    padding:10px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  tbody td:first-child{text-align:left; color:var(--muted);}
+  tbody tr:hover{background:#f8faf7;}
+  tbody tr.year-mark td{border-bottom:1px solid var(--moss);}
+
+  .export-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px 24px;
+    flex-wrap:wrap;
+    gap:12px;
+    position:relative;
+    z-index:5;
+    background:var(--panel);
+  }
+  .step-badge{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--moss);
+    display:none;
+  }
+  .step-badge.show{display:inline-flex; align-items:center; gap:6px;}
+  .step-badge::before{
+    content:"";
+    width:7px;height:7px;
+    border-radius:50%;
+    background:var(--gold);
+    display:inline-block;
+  }
+  button.export{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    padding:12px 20px;
+    border-radius:2px;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  button.export:hover{background:var(--moss);}
+
+  /* --- Buttons: presets & toggle --- */
+  .preset-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:-8px;
+    margin-bottom:22px;
+  }
+  .preset-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.03em;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--muted);
+    padding:6px 10px;
+    border-radius:2px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .preset-btn:hover{border-color:var(--moss); color:var(--moss);}
+  .preset-btn.active{
+    background:var(--moss);
+    border-color:var(--moss);
+    color:#fff;
+  }
+
+  .divider{
+    height:1px;
+    background:var(--line);
+    margin:26px 0 22px;
+  }
+
+  .toggle-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .toggle-row label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .switch{
+    width:38px;
+    height:20px;
+    border-radius:12px;
+    background:var(--line);
+    position:relative;
+    cursor:pointer;
+    border:none;
+    padding:0;
+    transition:background .15s;
+    flex-shrink:0;
+  }
+  .switch::after{
+    content:"";
+    position:absolute;
+    top:2px; left:2px;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:#fff;
+    transition:left .15s;
+  }
+  .switch.on{background:var(--moss);}
+  .switch.on::after{left:20px;}
+
+  .field.stepfield{
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    margin-bottom:0;
+    transition:max-height .2s ease, opacity .15s ease, margin-bottom .2s ease;
+  }
+  .field.stepfield.open{
+    max-height:90px;
+    opacity:1;
+    margin-bottom:22px;
+  }
+
+  .stat.tiny .value{font-size:16px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Compounding, month by month</div>
+  <h1>SIP Growth Calculator</h1>
+  <p>See how a fixed monthly investment compounds over time — enter your contribution, tenure, and expected annual return.</p>
+</header>
+
+<main>
+  <div class="layout">
+    <div class="panel inputs">
+      <div class="field">
+        <label for="monthly">Monthly Investment</label>
+        <input type="number" id="monthly" value="5000" min="0" step="500">
+        <div class="suffix">per month</div>
+      </div>
+      <div class="preset-row" id="presetMonthly">
+        <button class="preset-btn" data-val="2500">₹2.5k</button>
+        <button class="preset-btn active" data-val="5000">₹5k</button>
+        <button class="preset-btn" data-val="10000">₹10k</button>
+        <button class="preset-btn" data-val="25000">₹25k</button>
+      </div>
+
+      <div class="field">
+        <label for="months">Period</label>
+        <input type="number" id="months" value="120" min="1" step="1">
+        <div class="suffix">months</div>
+      </div>
+      <div class="preset-row" id="presetMonths">
+        <button class="preset-btn" data-val="60">5Y</button>
+        <button class="preset-btn active" data-val="120">10Y</button>
+        <button class="preset-btn" data-val="180">15Y</button>
+        <button class="preset-btn" data-val="240">20Y</button>
+      </div>
+
+      <div class="field">
+        <label for="rate">Interest Rate</label>
+        <input type="number" id="rate" value="12" min="0" step="0.1">
+        <div class="suffix">% per annum</div>
+      </div>
+      <div class="preset-row" id="presetRate">
+        <button class="preset-btn" data-val="8">8%</button>
+        <button class="preset-btn active" data-val="12">12%</button>
+        <button class="preset-btn" data-val="15">15%</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="toggle-row">
+        <label for="stepToggle">Step-up SIP</label>
+        <button class="switch" id="stepToggle" role="switch" aria-checked="false"></button>
+      </div>
+      <div class="field stepfield" id="stepField">
+        <label for="stepup">Annual Increase</label>
+        <input type="number" id="stepup" value="10" min="0" step="1">
+        <div class="suffix">% raise each year</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel summary">
+        <div class="stat moss">
+          <div class="label">Total Invested</div>
+          <div class="value" id="sumInvest">—</div>
+        </div>
+        <div class="stat gold">
+          <div class="label">Est. Returns</div>
+          <div class="value" id="sumReturn">—</div>
+        </div>
+        <div class="stat">
+          <div class="label">Total Value</div>
+          <div class="value" id="sumTotal">—</div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:24px;">
+        <div class="bar-wrap">
+          <div class="bar">
+            <div class="seg-invest" id="segInvest" style="width:60%"></div>
+            <div class="seg-return" id="segReturn" style="width:40%"></div>
+          </div>
+          <div class="bar-legend">
+            <span class="li-invest">Invested</span>
+            <span class="li-return">Returns</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel table-panel">
+        <div class="export-row">
+          <span class="step-badge" id="stepBadge">Step-up active</span>
+          <button class="export" id="exportBtn">Download CSV</button>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr id="tableHead">
+                <th>Month</th>
+                <th class="contribHead" style="display:none;">SIP Amount</th>
+                <th>Total Investment</th>
+                <th>Return</th>
+                <th>Total Value</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const fmt = n => n.toLocaleString('en-IN', {maximumFractionDigits:0});
+
+let stepUpOn = false;
+
+function calculate(){
+  const baseMonthly = parseFloat(document.getElementById('monthly').value) || 0;
+  const months = parseInt(document.getElementById('months').value) || 0;
+  const annualInterest = parseFloat(document.getElementById('rate').value) || 0;
+  const stepUpPct = stepUpOn ? (parseFloat(document.getElementById('stepup').value) || 0) : 0;
+  const monthlyRate = annualInterest / 12 / 100;
+
+  let totalInvestment = 0;
+  let totalValue = 0;
+  const rows = [];
+  let currentMonthly = baseMonthly;
+
+  for(let month = 1; month <= months; month++){
+    // bump the contribution at the start of every completed year (month 13, 25, 37...)
+    if(stepUpOn && month > 1 && (month - 1) % 12 === 0){
+      currentMonthly = currentMonthly * (1 + stepUpPct / 100);
+    }
+
+    totalInvestment += currentMonthly;
+    if(month === 1){
+      totalValue = currentMonthly * (1 + monthlyRate);
+    } else {
+      totalValue = (totalValue + currentMonthly) * (1 + monthlyRate);
+    }
+    const returns = totalValue - totalInvestment;
+    rows.push({month, contribution: currentMonthly, totalInvestment, returns, totalValue});
+  }
+
+  return rows;
+}
+
+function render(){
+  const rows = calculate();
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  document.querySelectorAll('.contribHead').forEach(el => el.style.display = stepUpOn ? '' : 'none');
+
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    if(r.month % 12 === 0) tr.classList.add('year-mark');
+    tr.innerHTML = `
+      <td>${r.month}</td>
+      ${stepUpOn ? `<td>₹${fmt(r.contribution)}</td>` : ''}
+      <td>₹${fmt(r.totalInvestment)}</td>
+      <td>₹${fmt(r.returns)}</td>
+      <td>₹${fmt(r.totalValue)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('stepBadge').classList.toggle('show', stepUpOn);
+
+  const last = rows[rows.length - 1];
+  if(last){
+    document.getElementById('sumInvest').textContent = '₹' + fmt(last.totalInvestment);
+    document.getElementById('sumReturn').textContent = '₹' + fmt(last.returns);
+    document.getElementById('sumTotal').textContent = '₹' + fmt(last.totalValue);
+
+    const investPct = (last.totalInvestment / last.totalValue) * 100;
+    const returnPct = 100 - investPct;
+    document.getElementById('segInvest').style.width = investPct + '%';
+    document.getElementById('segReturn').style.width = returnPct + '%';
+  } else {
+    document.getElementById('sumInvest').textContent = '—';
+    document.getElementById('sumReturn').textContent = '—';
+    document.getElementById('sumTotal').textContent = '—';
+  }
+
+  window._sipRows = rows;
+}
+
+function exportCSV(){
+  const rows = window._sipRows || [];
+  const header = stepUpOn
+    ? 'Serial,Month,SIP Amount,Total Investment,Return,Total Value\n'
+    : 'Serial,Month,Total Investment,Return,Total Value\n';
+  let csv = header;
+  rows.forEach(r => {
+    csv += stepUpOn
+      ? `${r.month},${r.month},${r.contribution.toFixed(2)},${r.totalInvestment.toFixed(2)},${r.returns.toFixed(2)},${r.totalValue.toFixed(2)}\n`
+      : `${r.month},${r.month},${r.totalInvestment.toFixed(2)},${r.returns.toFixed(2)},${r.totalValue.toFixed(2)}\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'SIP_Calculator.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// --- core inputs ---
+['monthly','months','rate','stepup'].forEach(id => {
+  document.getElementById(id).addEventListener('input', render);
+});
+document.getElementById('exportBtn').addEventListener('click', exportCSV);
+
+// --- preset button groups: click sets the linked input & highlights the button ---
+function wirePresets(containerId, inputId){
+  const container = document.getElementById(containerId);
+  const input = document.getElementById(inputId);
+  container.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      input.value = btn.dataset.val;
+      container.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    });
+  });
+  // typing a custom value clears the active state if it no longer matches a preset
+  input.addEventListener('input', () => {
+    const match = [...container.querySelectorAll('.preset-btn')].find(b => b.dataset.val === input.value);
+    container.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b === match));
+  });
+}
+wirePresets('presetMonthly', 'monthly');
+wirePresets('presetMonths', 'months');
+wirePresets('presetRate', 'rate');
+
+// --- step-up toggle ---
+const stepToggle = document.getElementById('stepToggle');
+const stepField = document.getElementById('stepField');
+stepToggle.addEventListener('click', () => {
+  stepUpOn = !stepUpOn;
+  stepToggle.classList.toggle('on', stepUpOn);
+  stepToggle.setAttribute('aria-checked', String(stepUpOn));
+  stepField.classList.toggle('open', stepUpOn);
+  render();
+});
+
+render();
+</script>
+
+</body>
+</html>
+
